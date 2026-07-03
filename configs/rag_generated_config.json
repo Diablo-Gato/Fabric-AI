@@ -1,0 +1,12 @@
+{
+  "weather": "clear",
+  "time_of_day": "midday",
+  "object_density": 0.95,
+  "auto_rickshaw_count": 5,
+  "cow": true,
+  "road_type": "asphalt",
+  "sun_intensity": 1.2,
+  "rain_intensity": 0.0,
+  "num_scenes": 1,
+  "occlusion_level": 0.7
+}

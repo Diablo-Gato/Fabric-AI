@@ -1,0 +1,96 @@
+[
+  {
+    "weather": "clear",
+    "time_of_day": "midday",
+    "object_density": 0.6,
+    "auto_rickshaw_count": 5,
+    "cow": true
+  },
+  {
+    "weather": "rainy",
+    "time_of_day": "evening",
+    "object_density": 0.9,
+    "auto_rickshaw_count": 7,
+    "cow": false
+  },
+  {
+    "weather": "foggy",
+    "time_of_day": "morning",
+    "object_density": 0.7,
+    "auto_rickshaw_count": 5,
+    "cow": true
+  },
+  {
+    "weather": "clear",
+    "time_of_day": "morning",
+    "object_density": 0.5,
+    "auto_rickshaw_count": 4,
+    "cow": false
+  },
+  {
+    "weather": "rainy",
+    "time_of_day": "night",
+    "object_density": 1.0,
+    "auto_rickshaw_count": 8,
+    "cow": true
+  },
+  {
+    "weather": "foggy",
+    "time_of_day": "evening",
+    "object_density": 0.8,
+    "auto_rickshaw_count": 6,
+    "cow": false
+  },
+  {
+    "weather": "clear",
+    "time_of_day": "evening",
+    "object_density": 0.7,
+    "auto_rickshaw_count": 5,
+    "cow": true
+  },
+  {
+    "weather": "rainy",
+    "time_of_day": "morning",
+    "object_density": 0.85,
+    "auto_rickshaw_count": 7,
+    "cow": true
+  },
+  {
+    "weather": "foggy",
+    "time_of_day": "night",
+    "object_density": 0.6,
+    "auto_rickshaw_count": 4,
+    "cow": false
+  },
+  {
+    "weather": "clear",
+    "time_of_day": "night",
+    "object_density": 0.9,
+    "auto_rickshaw_count": 6,
+    "cow": true
+  },
+  {
+    "weather": "clear",
+    "time_of_day": "midday",
+    "object_density": 0.6,
+    "auto_rickshaw_count": 4,
+    "cow": true,
+    "road_type": "asphalt"
+  },
+  {
+    "weather": "clear",
+    "time_of_day": "morning",
+    "object_density": 0.4,
+    "auto_rickshaw_count": 3,
+    "cow": true,
+    "road_type": "sand"
+  },
+  {
+    "weather": "rainy",
+    "time_of_day": "evening",
+    "object_density": 0.8,
+    "auto_rickshaw_count": 3,
+    "cow": false,
+    "road_type": "sand"
+  }
+]
