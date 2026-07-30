@@ -224,6 +224,8 @@ class Scene:
     def world(self):
         weather = self.config.get("weather", "clear")
         time_of_day = self.config.get("time_of_day", "midday")
+        sun_intensity = float(self.config.get("sun_intensity", 1.0))
+        rain_intensity = float(self.config.get("rain_intensity", 0.0))
 
         world = bpy.data.worlds.new("world")
         bpy.context.scene.world = world
@@ -239,17 +241,17 @@ class Scene:
         sky.sun_size = np.radians(1.5) if sky.sun_disc else 0.0
 
         if weather == "rainy":
-            sky.dust_density = 5.0
-            sky.air_density = 3.0
-            sky.sun_intensity = 0.2
+            sky.dust_density = 5.0 + rain_intensity * 8.0
+            sky.air_density = 3.0 + rain_intensity * 4.0
+            sky.sun_intensity = max(0.05, min(1.0, sun_intensity * 0.25))
         elif weather == "foggy":
-            sky.dust_density = 8.0
-            sky.air_density = 4.0
-            sky.sun_intensity = 0.4
+            sky.dust_density = 4.0 + rain_intensity * 6.0
+            sky.air_density = 3.0 + rain_intensity * 3.5
+            sky.sun_intensity = max(0.05, min(0.9, sun_intensity * 0.35))
         else:
-            sky.dust_density = 1.0
-            sky.air_density = 1.0
-            sky.sun_intensity = 1.0
+            sky.dust_density = max(0.2, min(2.0, 1.0 + rain_intensity * 0.5))
+            sky.air_density = max(0.5, min(2.0, 1.0 + rain_intensity * 0.4))
+            sky.sun_intensity = max(0.1, min(1.5, sun_intensity))
 
         if time_of_day == "morning":
             sky.sun_elevation = np.radians(20)
@@ -385,6 +387,7 @@ class Scene:
         time_of_day = self.config.get("time_of_day", "midday")
 
         if weather in ["rainy", "foggy"]:
+            rain_intensity = float(self.config.get("rain_intensity", 0.0))
             bpy.ops.mesh.primitive_cube_add(size=1500)
             fog = bpy.context.active_object
             fog.location = (0, 700, 10)
@@ -396,14 +399,17 @@ class Scene:
             n.clear()
 
             vol = n.new("ShaderNodeVolumePrincipled")
-            if time_of_day == "night":
-                density = 0.001 if weather == "rainy" else 0.002
+            if weather == "rainy":
+                density = 0.004 + rain_intensity * 0.015
             else:
-                density = 0.002 if weather == "rainy" else 0.005
+                density = 0.008 + rain_intensity * 0.020
 
-            vol.inputs["Density"].default_value = density
+            if time_of_day == "night":
+                density *= 0.8
+
+            vol.inputs["Density"].default_value = min(0.035, max(0.001, density))
             vol.inputs["Anisotropy"].default_value = 0.5
-            vol.inputs["Color"].default_value = (0.8, 0.8, 0.8, 1.0)
+            vol.inputs["Color"].default_value = (0.85, 0.85, 0.86, 1.0)
 
             out = n.new("ShaderNodeOutputMaterial")
             l.new(vol.outputs["Volume"], out.inputs["Volume"])
@@ -666,14 +672,18 @@ class Scene:
 
         density = self.config.get("object_density", 0.5)
         weather = self.config.get("weather", "clear")
+        rain_intensity = float(self.config.get("rain_intensity", 0.0))
 
         num_cars  = max(2, int(15 * density))
         num_autos = self.config.get("auto_rickshaw_count", 0)
         if weather == "clear":
             num_autos = max(num_autos, 4)
 
-        # Under rainy conditions, aggressively reduce traffic to limit memory usage
+        # Under rainy conditions, reduce traffic further based on rain intensity
         if weather == "rainy":
+            reduction = max(0.3, 1.0 - rain_intensity * 0.85)
+            num_cars = max(2, int(num_cars * reduction))
+            num_autos = max(1, int(num_autos * reduction))
             num_cars = min(4, num_cars)
             num_autos = min(3, num_autos)
 
@@ -732,14 +742,16 @@ class Scene:
         from PIL import Image as PILImage, ImageFilter, ImageDraw
         rain_layer = PILImage.new("RGBA", (width, height), (0, 0, 0, 0))
         draw = ImageDraw.Draw(rain_layer)
-        num_drops = random.randint(800, 1400)
+        rain_intensity = float(self.config.get("rain_intensity", 0.0))
+        num_drops = int(800 + rain_intensity * 1200)
+        num_drops = max(600, min(num_drops, 2000))
         for _ in range(num_drops):
             x = random.randint(0, width)
             y = random.randint(0, height)
             depth_factor = y / height
             length  = int(random.uniform(15, 45) * (0.5 + depth_factor))
             angle_x = int(random.uniform(3, 8))
-            opacity = int(random.uniform(60, 140) * (0.4 + depth_factor * 0.6))
+            opacity = int(random.uniform(60, 140) * (0.4 + depth_factor * 0.6) * (0.5 + rain_intensity * 0.8))
             width_px = 1 if depth_factor < 0.5 else random.choice([1, 1, 2])
             draw.line(
                 [(x, y), (x + angle_x, y + length)],
@@ -1078,37 +1090,39 @@ def main():
     print("FABRIC-AI Scene Generator — MAIN STARTED")
     print(f"Configs loaded: {len(scene_configs)}")
 
-    bproc.init()
+    bproc.init(clean_up_scene=True)
 
     OUTPUT.mkdir(parents=True, exist_ok=True)
     images_dir = OUTPUT / "images"
-    images_dir.mkdir(parents=True, exist_ok=True)
+    if images_dir.exists():
+        old_images = sorted(images_dir.glob("scene_*.png"))
+        if old_images:
+            print(f"[CLEANUP] Removing {len(old_images)} stale rendered images from {images_dir}")
+            for old_img in old_images:
+                try:
+                    old_img.unlink()
+                except Exception as e:
+                    print(f"[WARN] Could not remove stale image {old_img}: {e}")
+    else:
+        images_dir.mkdir(parents=True, exist_ok=True)
 
     ann_path = OUTPUT / "latest_annotations.json"
+    if ann_path.exists():
+        try:
+            ann_path.unlink()
+            print(f"[CLEANUP] Removed stale annotation file: {ann_path}")
+        except Exception as e:
+            print(f"[WARN] Could not remove stale annotation file {ann_path}: {e}")
+
     annotations = {
         "images": [],
         "annotations": [],
         "categories": CATEGORIES
     }
 
-    if ann_path.exists():
-        try:
-            with open(ann_path, "r") as f:
-                loaded_annotations = json.load(f)
-            if isinstance(loaded_annotations, dict):
-                annotations["images"] = loaded_annotations.get("images", [])
-                annotations["annotations"] = loaded_annotations.get("annotations", [])
-                annotations["categories"] = loaded_annotations.get("categories", CATEGORIES)
-            else:
-                print(f"[WARN] Existing annotations file has invalid structure, resetting.")
-        except Exception as e:
-            print(f"[WARN] Failed to load existing annotations: {e}")
-
-    existing_images = sorted(images_dir.glob("scene_*.png"))
-    start_index = len(existing_images)
-    print(f"[RESUME] Found {start_index} existing images, resuming from scene {start_index + 1}")
-
+    start_index = 0
     total = len(scene_configs)
+    print("[INFO] Fresh render start; existing output cleared.")
 
     for i, config in enumerate(scene_configs):
         if i < start_index:

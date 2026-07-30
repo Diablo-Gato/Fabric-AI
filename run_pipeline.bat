@@ -1,4 +1,11 @@
 @echo off
+
+echo [STAGE 0] Cleaning stale artifacts...
+if exist configs\rag_generated_config.json del configs\rag_generated_config.json
+if exist output\*.png del /q output\*.png
+if exist output\images\*.png del /q output\images\*.png
+if exist output\latest_annotations.json del /q output\latest_annotations.json
+
 echo [STAGE 1] Running RAG query engine...
 call venv_gpu\Scripts\activate.bat
 python rag_query_engine.py %*
